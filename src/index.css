@@ -21,3 +21,16 @@ div.center {
   text-align: center;
   margin: auto;
 }
+
+div.center-left {
+  float: left;
+  margin-left: 100px;
+  margin-top: 350px;
+}
+
+button.start {
+  font-family: 'Open Sans', sans-serif;
+  font-size: 42px;
+  font-weight: 600;
+}
+
