@@ -32,7 +32,7 @@ export default function App() {
                     <h1>Chess Dapp</h1>
                     <div>
                         <div id="MyBoard" class="ex1">
-                          <Chessboard position={game.fen()} onPieceDrop={onDrop} onMouseOverSquare={onMouseoverSquare}/>
+                          <Chessboard position={game.fen()} onPieceDrop={onDrop}/>
                         </div>
                         <div class="col-md-12">
                             <h2 class="center">Status</h2>
