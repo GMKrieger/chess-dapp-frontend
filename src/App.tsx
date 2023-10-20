@@ -4,7 +4,47 @@ import { useState } from "react";
 import { Chess } from "chess.js";
 import { Chessboard } from "react-chessboard";
 
+import { init, useConnectWallet } from '@web3-onboard/react';
+import injectedModule from '@web3-onboard/injected-wallets';
+import { ethers } from 'ethers';
+import { InputBox__factory, InputBox } from "@cartesi/rollups";
+
+
+const INPUTBOX_ADDRESS = "0x59b22D57D4f067708AB0c00552767405926dc768";
+
+// TODO: retrieve SHARD_ADDRESS using DAppSharding.calculateShardAddress
+const SHARD_ADDRESS = "0x70ac08179605AF2D9e75782b8DEcDD3c22aA4D0C";
+
+
+// initialize web3-onboard
+const injected = injectedModule();
+init({
+  wallets: [injected],
+  chains: [
+    {
+      id: '0xAA36A7',
+      token: 'ETH',
+      label: 'Sepolia'
+    }
+  ]
+});
+
 export default function App() {
+
+  // connect metamask wallet and contract instances
+  const [{ wallet, connecting }, connect, disconnect] = useConnectWallet();
+  let ethersProvider: ethers.providers.Web3Provider;
+  let inputBox: InputBox;
+  if (wallet) {
+    ethersProvider = new ethers.providers.Web3Provider(wallet.provider, 'any');
+    inputBox = InputBox__factory.connect(INPUTBOX_ADDRESS, ethersProvider.getSigner());
+    if (!connecting) {
+      ethersProvider.getSigner().getAddress().then(address =>
+        console.log(`Connected with account "${address}"`)
+     );
+    }
+  }
+
   const [game, setGame] = useState(new Chess());
 
   const [status, setStatus] = useState(<span>No check, checkmate, or draw.</span>)
@@ -12,9 +52,7 @@ export default function App() {
   function sayHello() {
     alert('You clicked me!');
   }
-  // Usage
-  <button onClick={sayHello}>Default</button>;
-
+  
   function updateStatus() {
     const color = game.turn() === 'w' ? 'White' : 'Black'
 
@@ -39,20 +77,35 @@ export default function App() {
   }
 
   function onDrop(sourceSquare: string, targetSquare: string) {
-    try{
-      game.move({
+    const originalBoard = game.fen();
+    try {
+      const move = game.move({
         from: sourceSquare,
         to: targetSquare,
         promotion: "q", // always promote to a queen for example simplicity
       });
-    }catch{// illegal move
+  
+      // send move to blockchain
+      const payload = ethers.utils.toUtf8Bytes(move.san);
+      console.log(`Sending move "${move.san}" as addInput with payload "${payload}"`);
+      inputBox.addInput(SHARD_ADDRESS, payload).catch(e => {
+        // revert board in case of error/reject when submitting
+        console.error(e);
+        game.load(originalBoard)
+        updateStatus();
+        setGame(new Chess(originalBoard));
+      });
+
+    } catch (e) {// illegal move or failure to send tx
+      console.error(e);
+      game.load(originalBoard);
       return false;
     }
+
+    // update board
     updateStatus();
-
-    let gameCopy = new Chess(game.fen())
-    setGame(gameCopy);
-
+    setGame(new Chess(game.fen()));
+      
     return true;
   }
 
@@ -67,7 +120,15 @@ export default function App() {
         <div>
           <h1>Chess Dapp</h1>
         </div>
-        <div id="MyBoard" className="ex1">
+        <div>
+          <button
+            disabled={connecting}
+            onClick={() => (wallet ? disconnect(wallet) : connect())}
+          >
+            {connecting ? 'connecting' : wallet ? 'disconnect' : 'connect'}
+          </button>
+        </div>
+        <div id="MyBoard" className="ex1" style={wallet ? {} : {pointerEvents: "none", opacity: "0.4"}}>
           <Chessboard position={game.fen()} onPieceDrop={onDrop}/>
         </div>
         <div>
