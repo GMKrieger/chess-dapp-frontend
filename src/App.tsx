@@ -1,6 +1,6 @@
 import './App.css';
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Chess } from "chess.js";
 import { Chessboard } from "react-chessboard";
 
@@ -49,8 +49,13 @@ export default function App() {
 
   const [status, setStatus] = useState(<span>No check, checkmate, or draw.</span>)
 
-  function sayHello() {
-    alert('You clicked me!');
+  // updates board status on every re-render
+  useEffect(() => {
+    updateStatus();
+  });  
+
+  function startGame() {
+    setGame(new Chess());
   }
   
   function updateStatus() {
@@ -91,8 +96,6 @@ export default function App() {
       inputBox.addInput(SHARD_ADDRESS, payload).catch(e => {
         // revert board in case of error/reject when submitting
         console.error(e);
-        game.load(originalBoard)
-        updateStatus();
         setGame(new Chess(originalBoard));
       });
 
@@ -103,7 +106,6 @@ export default function App() {
     }
 
     // update board
-    updateStatus();
     setGame(new Chess(game.fen()));
       
     return true;
@@ -112,7 +114,7 @@ export default function App() {
   return (
     <div>
       <div className="center-left">
-        <button className="start" onClick={sayHello}>
+        <button className="start" onClick={startGame}>
           Start new game
         </button>
       </div>
