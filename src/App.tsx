@@ -38,7 +38,7 @@ export default function App() {
     return true;
   }
 
-  function onDrop(sourceSquare, targetSquare) {
+  function onDrop(sourceSquare: string, targetSquare: string) {
     try{
       game.move({
         from: sourceSquare,
@@ -57,29 +57,24 @@ export default function App() {
   }
 
   return (
-  <body>
-    <main>
+    <div>
+      <div className="center-left">
+        <button className="start" onClick={sayHello}>
+          Start new game
+        </button>
+      </div>
+      <div className="center">
         <div>
-            <div>
-                <div class="center-left">
-                  <button class="start" onClick={sayHello}>
-                    Start new game
-                  </button>
-                </div>
-                <div class="center">
-                  <div>
-                    <h1>Chess Dapp</h1>
-                  </div>
-                  <div id="MyBoard" class="ex1">
-                    <Chessboard position={game.fen()} onPieceDrop={onDrop}/>
-                  </div>
-                  <div>
-                      <h2>Status</h2>
-                      <p>{status}</p>
-                  </div>
-                </div>
-            </div>
+          <h1>Chess Dapp</h1>
         </div>
-    </main>
-</body>);
+        <div id="MyBoard" className="ex1">
+          <Chessboard position={game.fen()} onPieceDrop={onDrop}/>
+        </div>
+        <div>
+            <h2>Status</h2>
+            <p>{status}</p>
+        </div>
+      </div>
+    </div>
+  );
 }
