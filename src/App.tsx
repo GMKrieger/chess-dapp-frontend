@@ -13,10 +13,8 @@ import { DAppSharding__factory, DAppSharding} from "dapp-sharding";
 import InputBoxDeployment from "@cartesi/rollups/deployments/sepolia/InputBox.json"
 import DAppShardingDeployment from "dapp-sharding/deployments/sepolia/DAppSharding.json";
 
-const MAINDAPP_ADDRESS = "0x20840b831add95B40bb91B800292293FA8F58906";
-const TEMPLATE_HASH = "0x80de56710c465209aeb36b4766a06e70eaa27041b2dba90a4fdd1619fe2f11d9";
-let timestamp: any = (new Date()).valueOf();
-const GAME_ID = keccak256(timestamp);
+const MAINDAPP_ADDRESS = "0xC0bF2492b753C10eB3C7f584f8F5C667e1e5a3f5";
+const TEMPLATE_HASH = "0xc1d186ac3c6100351f8a1bfe354bf44968daa8e4bc70c60e71ea3a803d8178ca";
 
 // initialize web3-onboard
 const injected = injectedModule();
@@ -31,7 +29,6 @@ init({
   ]
 });
 
-let shardAddress: string;
 
 export default function App() {
 
@@ -52,17 +49,18 @@ export default function App() {
   }
 
   const [game, setGame] = useState(new Chess());
-
   const [status, setStatus] = useState(<span>No check, checkmate, or draw.</span>)
+  const [gameId, setGameId] = useState("");
+  const [shardAddress, setShardAddress] = useState<string>();
 
   // updates board status on every re-render
   useEffect(() => {
-    updateStatus();
+    updateStatus(game);
   }, [game]);
 
   function verifyGame(){
     setStatus(<span>Verifying game results.</span>);
-    dappSharding.createShard(MAINDAPP_ADDRESS, TEMPLATE_HASH, GAME_ID).catch(e => {
+    dappSharding.createShard(MAINDAPP_ADDRESS, TEMPLATE_HASH, gameId).catch(e => {
       // revert board in case of error/reject when submitting
       console.error(e);
       setStatus(<span>Error during verification</span>);
@@ -74,14 +72,22 @@ export default function App() {
     // Send join game request to blockchain
     const payload = ethers.utils.toUtf8Bytes("joinGame");
     console.log(`Sending joinGame as addInput with payload "${payload}"`);
-    await inputBox.addInput(MAINDAPP_ADDRESS, payload).catch(e => {
+    try {
+      await inputBox.addInput(MAINDAPP_ADDRESS, payload);
+      //await notice GameReady
+    } catch (e) {
       console.error(e);
-    });
-    //await notice GameReady
+      return;
+    }
 
-    shardAddress = await dappSharding.calculateShardAddress(MAINDAPP_ADDRESS, TEMPLATE_HASH, GAME_ID);
-    console.log(`Starting game on shard "${shardAddress}"`);
+    // define gameId and calculate shard address
+    const timestamp: any = (new Date()).valueOf();
+    const newGameId = keccak256(timestamp);
+    const newShardAddress = await dappSharding.calculateShardAddress(MAINDAPP_ADDRESS, TEMPLATE_HASH, newGameId);
+    console.log(`Starting game on shard "${newShardAddress}"`);
     setGame(new Chess());
+    setGameId(newGameId);
+    setShardAddress(newShardAddress);
   }
 
   function sendResult(result: string){
@@ -94,7 +100,7 @@ export default function App() {
     });
   }
   
-  function updateStatus() {
+  function updateStatus(game: any) {
     const color = game.turn() === 'w' ? 'White' : 'Black'
 
     if (game.isCheckmate()) {
@@ -119,6 +125,10 @@ export default function App() {
   }
 
   function onDrop(sourceSquare: string, targetSquare: string) {
+    if (!shardAddress) {
+      console.error("No game shard defined");
+      return false;
+    }
     const originalBoard = game.fen();
     try {
       const move = game.move({
@@ -152,10 +162,10 @@ export default function App() {
     <div>
       <div>
         <div className='center-left'>
-          <button className="start" onClick={startGame}>
+          <button className="start" onClick={startGame} style={wallet ? {} : {pointerEvents: "none", opacity: "0.4"}}>
             Start new game
           </button><br></br>
-          <button className="start" onClick={verifyGame}>
+          <button className="start" onClick={verifyGame} style={wallet && shardAddress ? {} : {pointerEvents: "none", opacity: "0.4"}}>
             Verify game results
           </button>
         </div>
@@ -172,12 +182,13 @@ export default function App() {
             {connecting ? 'connecting' : wallet ? 'disconnect' : 'connect'}
           </button>
         </div>
-        <div id="MyBoard" className="ex1" style={wallet ? {} : {pointerEvents: "none", opacity: "0.4"}}>
+        <div id="MyBoard" className="ex1" style={wallet && shardAddress ? {} : {pointerEvents: "none", opacity: "0.4"}}>
           <Chessboard position={game.fen()} onPieceDrop={onDrop}/>
         </div>
         <div>
             <h2>Status</h2>
             <p>{status}</p>
+            { shardAddress && <p><b>Shard: </b>{shardAddress}</p> }
         </div>
       </div>
       <div></div>
