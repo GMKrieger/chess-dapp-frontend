@@ -159,39 +159,40 @@ export default function App() {
   }
 
   return (
-    <div>
+    <div className='center'>
+      <div>
+        <h1>Chess DApp</h1>
+      </div>
       <div>
         <div className='center-left'>
-          <button className="start" onClick={startGame} style={wallet ? {} : {pointerEvents: "none", opacity: "0.4"}}>
-            Start new game
-          </button><br></br>
-          <button className="start" onClick={verifyGame} style={wallet && shardAddress ? {} : {pointerEvents: "none", opacity: "0.4"}}>
-            Verify game results
-          </button>
-        </div>
-      </div>
-      <div className="center">
-        <div>
-          <h1>Chess Dapp</h1>
-        </div>
-        <div>
-          <button
-            disabled={connecting}
-            onClick={() => (wallet ? disconnect(wallet) : connect())}
-          >
-            {connecting ? 'connecting' : wallet ? 'disconnect' : 'connect'}
-          </button>
+          <div>
+            <button className="start"
+              disabled={connecting}
+              onClick={() => (wallet ? disconnect(wallet) : connect())}
+            >
+              {connecting ? 'Connecting' : wallet ? 'Disconnect' : 'Connect'}
+            </button>
+          </div>
+          <div>
+            <button className="start" onClick={startGame} style={wallet ? {} : {pointerEvents: "none", opacity: "0.4"}}>
+              Start new game
+            </button>
+          </div>
+          <div>
+            <button className="start" onClick={verifyGame} style={wallet && shardAddress ? {} : {pointerEvents: "none", opacity: "0.4"}}>
+              Verify game results
+            </button>
+          </div>
         </div>
         <div id="MyBoard" className="ex1" style={wallet && shardAddress ? {} : {pointerEvents: "none", opacity: "0.4"}}>
           <Chessboard position={game.fen()} onPieceDrop={onDrop}/>
         </div>
-        <div>
-            <h2>Status</h2>
-            <p>{status}</p>
-            { shardAddress && <p><b>Shard: </b>{shardAddress}</p> }
-        </div>
       </div>
-      <div></div>
+      <div>
+          <h2>Status</h2>
+          <p>{status}</p>
+          { shardAddress && <p><b>Shard: </b>{shardAddress}</p> }
+      </div>
     </div>
   );
 }
